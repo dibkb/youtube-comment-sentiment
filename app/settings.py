@@ -20,6 +20,7 @@ settings = Settings()
 class Config(BaseSettings):
     MAX_RESULTS: int = 20
     MAX_CONCURRENT_REQUESTS: int = 20
+    REDIS_CACHE_EXPIRATION: int = 3600
 
 
 config = Config()

@@ -73,7 +73,6 @@ async def get_comments(video_id: str, next_page_token: str = None):
                 sentiment_bytes.decode("utf-8")
             )
 
-    print(raw_comments)
-    redis_client.setex(hash_key, 3600, json.dumps(raw_comments))
+    redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(raw_comments))
 
     return raw_comments

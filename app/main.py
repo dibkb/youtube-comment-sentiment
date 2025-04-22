@@ -8,12 +8,13 @@ import hashlib
 
 app = FastAPI()
 
-
-# singleton initialization
+# ---------------- singleton initialization -----------------
 YoutubeAPI()
 LanguageModel()
+llama = LanguageModel().get_llama3_3()
+youtube_client = YoutubeAPI().get_youtube_client()
 redis_client = redis.Redis(host="redis", port=6379, db=0)
-
+# ------------------------------------------------------------
 
 @app.get("/")
 async def root():
@@ -22,10 +23,9 @@ async def root():
 
 @app.post("/get-comments/{video_id}")
 async def get_comments(video_id: str, next_page_token: str = None):
-    youtube_client = YoutubeAPI().get_youtube_client()
 
     token = next_page_token or ""
-    hash_key = hashlib.sha256((video_id + token).encode('utf-8')).hexdigest()
+    hash_key = hashlib.sha256((video_id + token).encode("utf-8")).hexdigest()
 
     cached_response = redis_client.get(hash_key)
     if cached_response:
@@ -41,4 +41,5 @@ async def get_comments(video_id: str, next_page_token: str = None):
     )
     response = request.execute()
     redis_client.setex(hash_key, 3600, json.dumps(response))
+
     return response

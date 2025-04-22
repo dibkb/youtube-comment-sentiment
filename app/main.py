@@ -1,5 +1,5 @@
 import json
-from .analyze import analyze_sentiment, batch_analyze_sentiments
+from .analyze import batch_analyze_sentiments
 from fastapi import FastAPI
 from .youtube_api import YoutubeAPI
 from .llm import LanguageModel
@@ -7,7 +7,6 @@ from .redis import RedisClient
 from .settings import config
 from .models import CleanedComment
 import hashlib
-import asyncio
 
 app = FastAPI()
 
@@ -34,7 +33,6 @@ async def get_comments(video_id: str, next_page_token: str = None):
     # Check if complete response is cached
     cached_response = redis_client.get(hash_key)
     if cached_response:
-
         return json.loads(cached_response)
 
     request = youtube_client.commentThreads().list(
@@ -69,17 +67,19 @@ async def get_comments(video_id: str, next_page_token: str = None):
     for rc in raw_comments:
         comment_id = rc["snippet"]["topLevelComment"]["id"]
         pipe.hget("comments", comment_id)
-    
+
     sentiments = pipe.execute()
-    
+
     # Apply sentiments to raw comments
     for i, rc in enumerate(raw_comments):
         sentiment_bytes = sentiments[i]
         if sentiment_bytes:
-            rc["snippet"]["topLevelComment"]["snippet"]["sentiment"] = sentiment_bytes.decode("utf-8")
+            rc["snippet"]["topLevelComment"]["snippet"]["sentiment"] = (
+                sentiment_bytes.decode("utf-8")
+            )
 
     # Cache the final result
     response["items"] = raw_comments
     redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(response))
-    
+
     return response

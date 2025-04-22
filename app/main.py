@@ -1,3 +1,4 @@
+from prometheus_fastapi_instrumentator import Instrumentator
 import json
 from .analyze import batch_analyze_sentiments
 from fastapi import FastAPI
@@ -19,8 +20,9 @@ youtube_client = YoutubeAPI().get_youtube_client()
 redis_client = RedisClient().get_redis_client()
 # redis_client.flushall()
 # ------------------------------------------------------------
-
-
+# ---------------- prometheus ----------------- 
+Instrumentator().instrument(app).expose(app)
+# ------------------------------------------------------------
 @app.get("/")
 async def root():
     return "Comment sentiment v1"

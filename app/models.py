@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Dict
+from typing import Literal
 
 
 class CommentSentiment(BaseModel):

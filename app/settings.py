@@ -21,6 +21,8 @@ class Config(BaseSettings):
     MAX_RESULTS: int = 20
     MAX_CONCURRENT_REQUESTS: int = 20
     REDIS_CACHE_EXPIRATION: int = 3600
+    # Batch size for grouping analysis requests
+    BATCH_SIZE: int = 5
 
 
 config = Config()

@@ -17,7 +17,7 @@ LanguageModel()
 RedisClient()
 youtube_client = YoutubeAPI().get_youtube_client()
 redis_client = RedisClient().get_redis_client()
-redis_client.flushall()
+# redis_client.flushall()
 # ------------------------------------------------------------
 
 

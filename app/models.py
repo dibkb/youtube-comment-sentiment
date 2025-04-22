@@ -13,12 +13,5 @@ class CleanedComment(BaseModel):
     cleanedComment: str = Field(description="The text of the comment")
 
 
-class ProcessedComment(BaseModel):
-    cleanedComment: str = Field(description="The cleaned comment")
-    sentiment: Literal["positive", "negative", "neutral"] = Field(
-        description="The sentiment of the comment"
-    )
 
 
-class CommentsHashMap(BaseModel):
-    data: Dict[str, ProcessedComment]

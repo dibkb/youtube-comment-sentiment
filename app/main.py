@@ -1,19 +1,23 @@
 import json
+from .analyze import analyze_sentiment
 from fastapi import FastAPI
 from .youtube_api import YoutubeAPI
 from .llm import LanguageModel
+from .redis import RedisClient
 from .settings import config
-import redis
+from .models import CleanedComment
 import hashlib
+import asyncio
 
 app = FastAPI()
 
 # ---------------- singleton initialization -----------------
 YoutubeAPI()
 LanguageModel()
-llama = LanguageModel().get_llama3_3()
+RedisClient()
 youtube_client = YoutubeAPI().get_youtube_client()
-redis_client = redis.Redis(host="redis", port=6379, db=0)
+redis_client = RedisClient().get_redis_client()
+# redis_client.flushall()
 # ------------------------------------------------------------
 
 @app.get("/")
@@ -40,6 +44,28 @@ async def get_comments(video_id: str, next_page_token: str = None):
         pageToken=next_page_token,
     )
     response = request.execute()
-    redis_client.setex(hash_key, 3600, json.dumps(response))
 
-    return response
+    comments = []
+    raw_comments = []
+    if "items" in response:
+        raw_comments = response["items"]
+        comments = [
+            CleanedComment(
+                id=item["snippet"]["topLevelComment"]['id'], 
+                cleanedComment=item["snippet"]["topLevelComment"]["snippet"]["textDisplay"]
+            )
+            for item in response["items"]
+        ]
+    
+    semaphore = asyncio.Semaphore(config.MAX_CONCURRENT_REQUESTS)
+    await asyncio.gather(*[analyze_sentiment(comment, semaphore) for comment in comments])
+
+    for rc in raw_comments:
+        sentiment_bytes = redis_client.hget("comments", rc["snippet"]["topLevelComment"]["id"])
+        if sentiment_bytes:
+            rc["snippet"]["topLevelComment"]["snippet"]["sentiment"] = sentiment_bytes.decode('utf-8')
+    
+    print(raw_comments)
+    redis_client.setex(hash_key, 3600, json.dumps(raw_comments))
+
+    return raw_comments

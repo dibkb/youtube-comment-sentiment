@@ -17,7 +17,7 @@ LanguageModel()
 RedisClient()
 youtube_client = YoutubeAPI().get_youtube_client()
 redis_client = RedisClient().get_redis_client()
-# redis_client.flushall()
+redis_client.flushall()
 # ------------------------------------------------------------
 
 
@@ -34,6 +34,7 @@ async def get_comments(video_id: str, next_page_token: str = None):
     # Check if complete response is cached
     cached_response = redis_client.get(hash_key)
     if cached_response:
+
         return json.loads(cached_response)
 
     request = youtube_client.commentThreads().list(
@@ -78,6 +79,7 @@ async def get_comments(video_id: str, next_page_token: str = None):
             rc["snippet"]["topLevelComment"]["snippet"]["sentiment"] = sentiment_bytes.decode("utf-8")
 
     # Cache the final result
-    redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(raw_comments))
-
-    return raw_comments
+    response["items"] = raw_comments
+    redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(response))
+    
+    return response

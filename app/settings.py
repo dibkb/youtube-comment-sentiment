@@ -21,4 +21,5 @@ class Config(BaseSettings):
     MAX_RESULTS: int = 20
     MAX_CONCURRENT_REQUESTS: int = 20
 
+
 config = Config()

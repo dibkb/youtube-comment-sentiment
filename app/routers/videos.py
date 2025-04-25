@@ -17,7 +17,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/search")
+@router.post("/search")
 async def search_videos(query: str):
     try:
         hash_key = hashlib.sha256((query).encode("utf-8")).hexdigest()
@@ -39,3 +39,51 @@ async def search_videos(query: str):
     
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+    
+@router.get("/search-related")
+async def search_related_videos(videoId: str, maxResults: int = config.MAX_RESULTS_RELATED):
+    try:
+        hash_key = hashlib.sha256(("related-videos-"+videoId).encode("utf-8")).hexdigest()
+        cached_response = redis_client.get(hash_key)
+        if cached_response:
+            return json.loads(cached_response)
+        request = youtube_client.search().list(
+            part="snippet",
+            q=videoId,
+            maxResults=maxResults,
+            type="video",
+            order="relevance",
+        )
+        response = request.execute()
+        if "items" in response:
+            redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(response["items"]))
+            return response["items"]
+        else:
+            return []
+    
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    
+@router.get("/info/{videoId}")
+async def get_video_info(videoId:str):
+    try:
+        key= f'video-info-{videoId}'
+        hash_key = hashlib.sha256((key).encode("utf-8")).hexdigest()
+        cached_response = redis_client.get(hash_key)
+        if cached_response:
+            return json.loads(cached_response)
+        
+        request = youtube_client.videos().list(
+            part="snippet,contentDetails,statistics",
+            id=videoId
+        )
+        response = request.execute()
+        if "items" in response and len(response["items"]) > 0:
+            redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(response["items"][0]))
+            return response["items"][0]
+        else:
+            return None
+        
+    except Exception as e:
+        return JSONResponse(status_code=500,content = {"error":str(e)})
+            

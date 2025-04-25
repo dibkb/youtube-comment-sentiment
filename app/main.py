@@ -26,11 +26,11 @@ app.add_middleware(
 YoutubeAPI()
 LanguageModel()
 RedisClient()
+# redis_client = RedisClient().get_redis_client()
 # redis_client.flushall()
-# ------------------------------------------------------------
+
 # ---------------- prometheus ----------------- 
 Instrumentator().instrument(app).expose(app)
-# ------------------------------------------------------------
 
 app.include_router(comment_sentiment.router)
 app.include_router(videos.router)

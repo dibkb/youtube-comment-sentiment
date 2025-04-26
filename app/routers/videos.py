@@ -86,4 +86,27 @@ async def get_video_info(videoId:str):
         
     except Exception as e:
         return JSONResponse(status_code=500,content = {"error":str(e)})
-            
+
+
+@router.get("/trending-videos")
+async def get_trending_videos(country: str = "US", maxResults: int = config.MAX_RESULTS_TRENDING):
+    try:
+        hash_key = hashlib.sha256(("trending-videos-"+country).encode("utf-8")).hexdigest()
+        cached_response = redis_client.get(hash_key)
+        if cached_response:
+            return json.loads(cached_response)
+        
+        request = youtube_client.videos().list(
+            part="snippet",
+            chart="mostPopular",
+            regionCode=country,
+            maxResults=maxResults
+        )
+        response = request.execute()
+        if "items" in response:
+            redis_client.setex(hash_key, config.REDIS_CACHE_EXPIRATION, json.dumps(response["items"]))
+            return response["items"]
+        else:
+            return []
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

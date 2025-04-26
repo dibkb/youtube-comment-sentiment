@@ -5,7 +5,7 @@ services:
     image: dibkb/neo-tube-server:production
     ports:
       - "8000:8000"
-    environment:
+    env_file:
       - .env
     depends_on:
       - redis

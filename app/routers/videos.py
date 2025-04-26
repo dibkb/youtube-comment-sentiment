@@ -16,7 +16,7 @@ router = APIRouter(
     tags=["videos"],
     responses={404: {"description": "Not found"}},
 )
-
+# redis_client.flushall()
 @router.post("/search")
 async def search_videos(query: str):
     try:
@@ -41,15 +41,15 @@ async def search_videos(query: str):
         return JSONResponse(status_code=500, content={"error": str(e)})
     
 @router.get("/search-related")
-async def search_related_videos(videoId: str, maxResults: int = config.MAX_RESULTS_RELATED):
+async def search_related_videos(title: str, maxResults: int = config.MAX_RESULTS_RELATED):
     try:
-        hash_key = hashlib.sha256(("related-videos-"+videoId).encode("utf-8")).hexdigest()
+        hash_key = hashlib.sha256(("related-videos-"+title).encode("utf-8")).hexdigest()
         cached_response = redis_client.get(hash_key)
         if cached_response:
             return json.loads(cached_response)
         request = youtube_client.search().list(
             part="snippet",
-            q=videoId,
+            q=title,
             maxResults=maxResults,
             type="video",
             order="relevance",

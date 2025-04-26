@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,Query
 import json
 from ..analyze import batch_analyze_sentiments
 from fastapi.responses import JSONResponse
@@ -7,21 +7,23 @@ from ..redis import RedisClient
 from ..settings import config
 from ..models import CleanedComment
 import hashlib
-
-
+from pydantic import BaseModel
+from typing import Optional
 youtube_client = YoutubeAPI().get_youtube_client()
 redis_client = RedisClient().get_redis_client()
-
+# redis_client.flushall()
 
 router = APIRouter(
     prefix="/comment-sentiment",
     tags=["comment-sentiment"],
     responses={404: {"description": "Not found"}},
 )
+class CommentRequest(BaseModel):
+    next_page_token: Optional[str] = None
 
 @router.post("/{video_id}")
-async def get_comments(video_id: str, next_page_token: str = None):
-    token = next_page_token or ""
+async def get_comments(video_id: str, comment_request: CommentRequest):
+    token = comment_request.next_page_token or ""
     try:
         hash_key = hashlib.sha256((video_id + token).encode("utf-8")).hexdigest()
 
@@ -36,7 +38,7 @@ async def get_comments(video_id: str, next_page_token: str = None):
             maxResults=config.MAX_RESULTS,
             textFormat="plainText",
             order="relevance",
-            pageToken=next_page_token,
+            pageToken=comment_request.next_page_token,
         )
         response = request.execute()
 

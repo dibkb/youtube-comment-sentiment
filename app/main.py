@@ -12,6 +12,7 @@ origins = [
     "http://localhost",
     "http://localhost:3000",
     "http://localhost:3001",
+    "https://brotube.borborah.xyz",
 ]
 
 app.add_middleware(
@@ -37,7 +38,7 @@ app.include_router(videos.router)
 
 @app.get("/")
 async def root():
-    return "Comment sentiment v1"
+    return "BroTube Server is running..."
 
 
 

@@ -13,6 +13,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://brotube.borborah.xyz",
+    "https://bro-tube.vercel.app/",
 ]
 
 app.add_middleware(
